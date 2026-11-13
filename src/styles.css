@@ -177,6 +177,6 @@
 }
 @layer base { body { font-family: var(--font-sans); } }
 @utility door-bg {
-  background-image: linear-gradient(color-mix(in oklab, var(--background) 86%, transparent), color-mix(in oklab, var(--background) 86%, transparent)), var(--door-url);
+  background-image: linear-gradient(color-mix(in oklab, var(--background) 55%, transparent), color-mix(in oklab, var(--background) 55%, transparent)), var(--door-url);
   background-size: cover; background-position: center; background-attachment: fixed;
 }
