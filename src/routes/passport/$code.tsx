@@ -14,9 +14,9 @@ export const Route = createFileRoute("/passport/$code")({
   },
   head: ({ params, loaderData }) => ({
     meta: [
-      { title: loaderData ? `${params.code} · ${loaderData.product} — Khit` : "Passport — Khit" },
+      { title: loaderData ? `${params.code} · ${loaderData.product} — Thread` : "Passport — Thread" },
       { name: "description", content: `Manufacturing journey of passport ${params.code}, recorded on Hedera.` },
-      { property: "og:title", content: `Passport ${params.code} — Khit` },
+      { property: "og:title", content: `Passport ${params.code} — Thread` },
       { property: "og:description", content: "Every step and handover, recorded by the company that did it." },
       { property: "og:type", content: "article" },
       { name: "twitter:card", content: "summary" },

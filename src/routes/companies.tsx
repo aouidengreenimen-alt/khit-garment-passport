@@ -8,9 +8,9 @@ const q = queryOptions({ queryKey: ["companies"], queryFn: getCompanies });
 export const Route = createFileRoute("/companies")({
   head: () => ({
     meta: [
-      { title: "Companies — Khit" },
-      { name: "description", content: "The companies allowed to record steps in Khit passports." },
-      { property: "og:title", content: "Companies — Khit" },
+      { title: "Companies — Thread" },
+      { name: "description", content: "The companies allowed to record steps in Thread passports." },
+      { property: "og:title", content: "Companies — Thread" },
       { property: "og:description", content: "Who can record steps on Hedera, and their standing." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

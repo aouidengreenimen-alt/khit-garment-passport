@@ -93,8 +93,8 @@
   --secondary-foreground: oklch(0.3 0.08 262);
   --muted: oklch(0.94 0.012 85);
   --muted-foreground: oklch(0.5 0.03 260);
-  --accent: oklch(0.72 0.14 65);
-  --accent-foreground: oklch(0.22 0.04 260);
+  --accent: oklch(0.6 0.14 158);
+  --accent-foreground: oklch(0.98 0.01 85);
   --destructive: oklch(0.55 0.2 30);
   --destructive-foreground: oklch(0.98 0.01 85);
   --success: oklch(0.52 0.12 155);
@@ -176,3 +176,7 @@
   width: 2px;
 }
 @layer base { body { font-family: var(--font-sans); } }
+@utility door-bg {
+  background-image: linear-gradient(color-mix(in oklab, var(--background) 86%, transparent), color-mix(in oklab, var(--background) 86%, transparent)), var(--door-url);
+  background-size: cover; background-position: center; background-attachment: fixed;
+}

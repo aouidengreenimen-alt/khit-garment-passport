@@ -8,9 +8,9 @@ const passportsQuery = queryOptions({ queryKey: ["passports"], queryFn: listPass
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Khit — the passport of your clothes" },
+      { title: "Thread — the passport of your clothes" },
       { name: "description", content: "Every manufacturing step of a batch of clothes, recorded on Hedera by the company that did it." },
-      { property: "og:title", content: "Khit — the passport of your clothes" },
+      { property: "og:title", content: "Thread — the passport of your clothes" },
       { property: "og:description", content: "Every manufacturing step, recorded on Hedera by the company that did it." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -33,7 +33,7 @@ function Home() {
   return (
     <div className="space-y-14">
       <section className="rounded-3xl bg-denim text-primary-foreground p-8 sm:p-12">
-        <p className="text-sm uppercase tracking-widest opacity-80">Khit · thread, in Tunisian Arabic</p>
+        <p className="text-sm uppercase tracking-widest opacity-80">Thread · khit, in Tunisian Arabic</p>
         <h1 className="font-display text-4xl sm:text-5xl mt-3 max-w-2xl leading-tight">The passport of a batch of clothes.</h1>
         <form
           className="mt-8 flex flex-col sm:flex-row gap-3 max-w-xl"

@@ -8,9 +8,9 @@ const samplesQuery = queryOptions({ queryKey: ["samples"], queryFn: getSamples }
 export const Route = createFileRoute("/check")({
   head: () => ({
     meta: [
-      { title: "Check a paper — Khit" },
+      { title: "Check a paper — Thread" },
       { name: "description", content: "Paste a delivery note and compare each statement with the passport on Hedera." },
-      { property: "og:title", content: "Check a paper — Khit" },
+      { property: "og:title", content: "Check a paper — Thread" },
       { property: "og:description", content: "Compare a delivery note with the passport recorded on Hedera." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
