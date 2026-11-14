@@ -30,6 +30,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <nav className="flex gap-1">
             <Link to="/check" className={nav} activeProps={{ className: "bg-secondary text-foreground" }}>Check a paper</Link>
             <Link to="/companies" className={nav} activeProps={{ className: "bg-secondary text-foreground" }}>Companies</Link>
+            <Link to="/workspace" className={nav} activeProps={{ className: "bg-secondary text-foreground" }}>For companies</Link>
           </nav>
         </div>
       </header>

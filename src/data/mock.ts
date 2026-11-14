@@ -49,3 +49,18 @@ export const report = {
   notes: [] as string[], model: "openai/gpt-oss-120b", checkedAt: "2026-11-13T16:00:00.000Z",
   log: { topicId: "0.0.1234567", sequenceNumber: 12 },
 };
+
+export const workspace = {
+  company: { name: "Atelier Bizerte (demo)", country: "Tunisia", address: "0x2222222222222222222222222222222222222222", approved: true, source: false },
+  isOwner: false,
+  lots: [
+    { lot: 3, code: "KHIT-3", step: "weaving", product: "Indigo denim, 12 oz", reference: "F-21", pieces: null as number | null, kg: 60, madeKg: 760, received: true, withdrawn: false, canWithdraw: false },
+    { lot: 5, code: "KHIT-5", step: "finishing", product: "Men's jeans, stone washed", reference: "J-507-W", pieces: 1000 as number | null, kg: 0, madeKg: 600, received: false, withdrawn: false, canWithdraw: true },
+  ],
+  incoming: [
+    { shipment: 3, from: { name: "Anadolu Denim (demo)", country: "Turkey" }, kg: 500, reference: "BL-0502", product: "Indigo denim, 12 oz", sentAt: 1794528000 },
+  ],
+  outgoing: [
+    { shipment: 2, to: { name: "Maison Lune (demo)", country: "France" }, kg: 600, reference: "BL-0911", product: "Men's jeans, stone washed", sentAt: 1794355200, status: "received" },
+  ],
+};

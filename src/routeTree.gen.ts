@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CheckRouteImport } from './routes/check'
 import { Route as CompaniesRouteImport } from './routes/companies'
+import { Route as WorkspaceRouteImport } from './routes/workspace'
 import { Route as PassportCodeRouteImport } from './routes/passport/$code'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const CompaniesRoute = CompaniesRouteImport.update({
   path: '/companies',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkspaceRoute = WorkspaceRouteImport.update({
+  id: '/workspace',
+  path: '/workspace',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PassportCodeRoute = PassportCodeRouteImport.update({
   id: '/passport/$code',
   path: '/passport/$code',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/check': typeof CheckRoute
   '/companies': typeof CompaniesRoute
+  '/workspace': typeof WorkspaceRoute
   '/passport/$code': typeof PassportCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/check': typeof CheckRoute
   '/companies': typeof CompaniesRoute
+  '/workspace': typeof WorkspaceRoute
   '/passport/$code': typeof PassportCodeRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,28 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/check': typeof CheckRoute
   '/companies': typeof CompaniesRoute
+  '/workspace': typeof WorkspaceRoute
   '/passport/$code': typeof PassportCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/check' | '/companies' | '/passport/$code'
+  fullPaths: '/' | '/check' | '/companies' | '/workspace' | '/passport/$code'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/check' | '/companies' | '/passport/$code'
-  id: '__root__' | '/' | '/check' | '/companies' | '/passport/$code'
+  to: '/' | '/check' | '/companies' | '/workspace' | '/passport/$code'
+  id:
+    | '__root__'
+    | '/'
+    | '/check'
+    | '/companies'
+    | '/workspace'
+    | '/passport/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CheckRoute: typeof CheckRoute
   CompaniesRoute: typeof CompaniesRoute
+  WorkspaceRoute: typeof WorkspaceRoute
   PassportCodeRoute: typeof PassportCodeRoute
 }
 
@@ -92,6 +108,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompaniesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/workspace': {
+      id: '/workspace'
+      path: '/workspace'
+      fullPath: '/workspace'
+      preLoaderRoute: typeof WorkspaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/passport/$code': {
       id: '/passport/$code'
       path: '/passport/$code'
@@ -106,6 +129,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CheckRoute: CheckRoute,
   CompaniesRoute: CompaniesRoute,
+  WorkspaceRoute: WorkspaceRoute,
   PassportCodeRoute: PassportCodeRoute,
 }
 export const routeTree = rootRouteImport
