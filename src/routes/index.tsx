@@ -42,7 +42,7 @@ function Home() {
           <input
             value={code} onChange={(e) => setCode(e.target.value)} placeholder="Passport code, e.g. KHIT-6"
             aria-label="Passport code"
-            className="flex-1 rounded-full bg-card text-foreground px-5 h-12 font-mono outline-none focus:ring-2 focus:ring-accent"
+            className="shrink-0 sm:shrink sm:flex-1 rounded-full bg-card text-foreground px-5 h-12 font-mono outline-none focus:ring-2 focus:ring-accent"
           />
           <button className="rounded-full bg-accent text-accent-foreground h-12 px-6 font-semibold hover:opacity-90">See the passport</button>
         </form>
@@ -66,7 +66,7 @@ function Home() {
               className="rounded-2xl border border-border bg-card p-6 hover:border-primary transition-colors">
               <div className="font-mono text-sm text-primary">{p.code}</div>
               <div className="font-display text-xl mt-1">{p.product}</div>
-              <div className="text-sm text-muted-foreground mt-2">{p.pieces.toLocaleString("en")} pieces · {p.kg} kg</div>
+              <div className="text-sm text-muted-foreground mt-2">{p.pieces != null ? `${p.pieces.toLocaleString("en")} pieces · ` : ""}{p.kg} kg</div>
               <div className="text-sm mt-1">Held by {p.holder}, {p.holderCountry}</div>
             </Link>
           ))}

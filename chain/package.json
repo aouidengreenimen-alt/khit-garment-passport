@@ -1,0 +1,27 @@
+{
+  "name": "thread-chain",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Hedera part of Thread: the passport contract, the demo journeys and the agent that reads the chain and checks papers against it.",
+  "license": "MIT",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:testnet": "hardhat run scripts/deploy.js --network hederaTestnet",
+    "seed": "node scripts/seed.js",
+    "cheat": "node scripts/cheat.js",
+    "demo:keys": "node scripts/keys.js",
+    "agent:check": "node agent/check.js",
+    "agent": "node agent/server.js"
+  },
+  "dependencies": {
+    "@hiero-ledger/sdk": "2.91.0",
+    "dotenv": "16.6.1",
+    "ethers": "6.17.0",
+    "express": "5.3.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "6.1.2",
+    "hardhat": "2.29.2"
+  }
+}

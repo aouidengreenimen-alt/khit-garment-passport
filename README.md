@@ -1,95 +1,179 @@
-# Khit Garment Passport
+# Thread
 
-Build the front end of "Khit", a web app that shows the passport of a batch of clothes: every manufacturing step, recorded on the Hedera blockchain by the company that did it. Three companies are in the demo: a mill in Turkey that makes the fabric, a factory in Bizerte (Tunisia) that sews the jeans, and a brand in Paris that sells them.
+A passport for clothes made in Tunisia. Every manufacturing step of a batch is
+recorded on Hedera by the company that did it, and an AI agent checks delivery
+papers against that record.
 
-Rules for this project:
-- Front end only. No backend, no database, no Supabase, no login.
-- All data access goes in one file, src/lib/api.ts, with these async functions: getPassport(code), listPassports(), getCompanies(), getSamples(), checkPaper(text). For now they return the mock data from src/data/mock.ts. Every page must get its data only through these functions, because this file will be replaced later by real API calls.
-- Language: English. Works on phone and laptop.
-- Never use the words "fake" or "fraud" anywhere.
+*Khit* means thread in Tunisian Arabic, which is why passport codes look like
+`KHIT-6`.
 
-Pages:
-1. Home ("/"): a short explanation in three steps (each company records its own step; each handover is confirmed by both sides; anyone can check the journey), a field to type a passport code (example KHIT-6) with a button "See the passport", and the passports from listPassports() as cards to click.
-2. Passport ("/passport/:code"):
-   - header with product, number of pieces, weight, passport code and current holder;
-   - a "Where it was made" summary from `origins`: Woven in, Dyed in, Sewn in, Washed in, each with country and company;
-   - the journey as a vertical timeline from `lines`, oldest first. A line with type "step" shows the step, company, country, date, weight, pieces and batch reference. A line with type "handover" shows from company to company, sent date, received date, weight, and a "confirmed by both sides" mark;
-   - a line whose standing is "withdrawn" or "company_removed" gets a clear warning style, and `warnings` are shown at the top;
-   - each line has a small link "Proof on Hedera" (href "#" for now).
-3. Check a paper ("/check"): a large text area to paste a delivery note, buttons to load the samples from getSamples(), and a button "Check this paper". After checking, show the report from checkPaper(): the counts at the top, then one row per statement with its status, the quoted words, the note, and the number of the passport line it was compared with. Status labels: verified = "On Hedera", differs = "Chain says otherwise", withdrawn = "Step withdrawn", not_found = "No record".
-4. Companies ("/companies"): the list from getCompanies() with name, country, whether it can record new material, and approved or removed.
+Built for the Hedera Cross Campus Challenge 2026 (4Hacks, ENIB Campus Edition).
 
-Mock data for src/data/mock.ts (keep these exact shapes; "at" and "sentAt" are Unix times in seconds):
+## The problem
 
-const mill = { name: "Anadolu Denim (demo)", country: "Turkey", address: "0x1111111111111111111111111111111111111111", approved: true };
-const factory = { name: "Atelier Bizerte (demo)", country: "Tunisia", address: "0x2222222222222222222222222222222222222222", approved: true };
-const brand = { name: "Maison Lune (demo)", country: "France", address: "0x3333333333333333333333333333333333333333", approved: true };
+A pair of jeans sold in Paris is often sewn in Bizerte from fabric woven in
+Turkey or Egypt. Three companies in three countries, and one paper that travels
+with the goods.
 
-export const companies = [
-  { ...mill, source: true, since: 1793577600 },
-  { ...factory, source: false, since: 1793577600 },
-  { ...brand, source: false, since: 1793577600 },
-];
+- Since 2023, French law (the AGEC law, decree 2022-748) makes clothing brands
+  above a size threshold tell customers the country where the fabric was woven
+  or knitted, where it was dyed or printed, and where the garment was sewn
+  ([source](https://www.marques-de-france.fr/magazine/lorigine-geographique-de-la-fabrication-des-vetements-obligatoire-a-partir-du-1er-janvier-2023/)).
+  The EU's Digital Product Passport, expected for textiles in the coming
+  years, will ask every brand selling in Europe for more data about each
+  product, wherever it is made
+  ([source](https://www.reconomy.com/2026/08/14/digital-product-passports-in-fashion/)).
+- Tunisia's textile and clothing industry has more than 1,400 companies and
+  about 146,000 jobs, and it is the country's second largest exporter among
+  manufacturing industries
+  ([source](https://www.lapresse.tn/2026/09/03/textile-habillement-plus-de-1-400-entreprises-et-146-000-emplois-en-tunisie/)).
+- Today the brand answers for the origin, but all it holds is a paper filled in
+  by its supplier. It cannot check that fabric described as woven in Turkey
+  really came from there. Each company keeps its own files, and none of them
+  wants its customer or its competitor to own a shared database.
 
-export const passport = {
-  lot: 6, code: "KHIT-6", holder: brand, kg: 600, madeKg: 600,
-  product: "Men's jeans, stone washed", reference: "J-507-W", pieces: 1000,
-  origins: {
-    weaving: [{ country: "Turkey", company: "Anadolu Denim (demo)", standing: "valid", n: 2 }],
-    dyeing: [{ country: "Turkey", company: "Anadolu Denim (demo)", standing: "valid", n: 1 }],
-    sewing: [{ country: "Tunisia", company: "Atelier Bizerte (demo)", standing: "valid", n: 4 }],
-    finishing: [{ country: "Tunisia", company: "Atelier Bizerte (demo)", standing: "valid", n: 5 }],
-  },
-  lines: [
-    { n: 1, type: "step", lot: 1, step: "dyeing", company: mill, at: 1793577600, kg: 780, product: "Cotton yarn, indigo dyed", reference: "Y-118", pieces: null, note: "", standing: "valid", withdrawnAt: null },
-    { n: 2, type: "step", lot: 2, step: "weaving", company: mill, at: 1793750400, kg: 760, product: "Indigo denim, 12 oz", reference: "F-21", pieces: null, note: "", standing: "valid", withdrawnAt: null },
-    { n: 3, type: "handover", lot: 3, shipment: 1, from: mill, to: factory, sentAt: 1793836800, at: 1794182400, kg: 760, reference: "BL-0457", standing: "valid" },
-    { n: 4, type: "step", lot: 4, step: "sewing", company: factory, at: 1794268800, kg: 610, product: "Men's jeans, model Rafraf", reference: "J-507", pieces: 1000, note: "", standing: "valid", withdrawnAt: null },
-    { n: 5, type: "step", lot: 5, step: "finishing", company: factory, at: 1794355200, kg: 600, product: "Men's jeans, stone washed", reference: "J-507-W", pieces: 1000, note: "", standing: "valid", withdrawnAt: null },
-    { n: 6, type: "handover", lot: 6, shipment: 2, from: factory, to: brand, sentAt: 1794355200, at: 1794441600, kg: 600, reference: "BL-0911", standing: "valid" },
-  ],
-  warnings: [],
-};
+## What Thread does
 
-export const passports = [
-  { code: "KHIT-6", lot: 6, product: "Men's jeans, stone washed", pieces: 1000, kg: 600, holder: "Maison Lune (demo)", holderCountry: "France" },
-];
-
-export const samples = [
-  { id: "honest", label: "A correct delivery note", text: "DELIVERY NOTE BL-0911\nFrom: Atelier Bizerte, Bizerte, Tunisia\nTo: Maison Lune, Paris, France\nPassport: KHIT-6\n\nGoods: 1,000 pairs of men's jeans, stone washed\nNet weight: 600 kg\n\nFabric dyed in Turkey\nFabric woven in Turkey\nSewn in Tunisia\nWashed in Tunisia" },
-  { id: "changed", label: "A note that says something else", text: "DELIVERY NOTE BL-0911\nFrom: Atelier Bizerte, Bizerte, Tunisia\nTo: Maison Lune, Paris, France\nPassport: KHIT-6\n\nGoods: 1,200 pairs of men's jeans, stone washed\n100% organic cotton, GOTS certified\n\nFabric woven in Italy\nSewn in Tunisia" },
-];
-
-export const report = {
-  lot: 6, code: "KHIT-6",
-  counts: { verified: 1, differs: 2, withdrawn: 0, not_found: 1 },
-  claims: [
-    { n: 1, kind: "quantity", claim: "1,200 pairs of jeans delivered", quote: "1,200 pairs of men's jeans", status: "differs", note: "The paper says 1,200 pieces. The passport says 1,000.", by: "code", line: 5 },
-    { n: 2, kind: "other", claim: "100% organic cotton, GOTS certified", quote: "100% organic cotton, GOTS certified", status: "not_found", note: "The passport does not record fibre certificates.", by: "model", line: null },
-    { n: 3, kind: "weaving", claim: "Fabric woven in Italy", quote: "Fabric woven in Italy", status: "differs", note: "The paper says Italy. The passport says Turkey, recorded by Anadolu Denim (demo).", by: "code", line: 2 },
-    { n: 4, kind: "sewing", claim: "Sewn in Tunisia", quote: "Sewn in Tunisia", status: "verified", note: "Sewn in Tunisia, recorded by Atelier Bizerte (demo).", by: "code", line: 4 },
-  ],
-  notes: [], model: "openai/gpt-oss-120b", checkedAt: "2026-11-13T16:00:00.000Z",
-  log: { topicId: "0.0.1234567", sequenceNumber: 12 },
-};
-
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/4c7d1d5b-9aed-5085-8107-7a95c76986f1).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
 ```
+Mill (Turkey)            Factory (Bizerte)             Brand (Paris)
+records the fabric  -->  confirms it arrived      -->  confirms it arrived
+ships it                 sews, washes, ships           holds the passport
+```
+
+1. **Each company records its own step**, signed with its own Hedera account.
+   Nobody can write a step in another company's name.
+2. **A handover counts only when the receiver confirms it.** The sender records
+   the shipment; the goods change hands on the chain when the other side signs.
+3. **The contract refuses more out than in.** A factory that received 60 kg of
+   fabric cannot declare 600 kg of jeans made from it, and it cannot use fabric
+   it never received.
+4. **Anyone can read the journey** by its passport code: where the fabric was
+   dyed and woven, where the clothes were sewn and washed, who confirmed each
+   handover, with a link to the proof on Hedera for every line.
+5. **An AI agent reads a delivery paper and compares each statement with the
+   chain.** It answers statement by statement: *On Hedera*, *Chain says
+   otherwise*, *Step withdrawn* or *No record*. A person reads the report and
+   decides.
+
+## Where Hedera is used
+
+| What | Hedera service | Code |
+| --- | --- | --- |
+| Companies, lots, shipments and the rules above | Smart contract on the Hedera EVM, through the JSON-RPC relay | `chain/contracts/GarmentPassport.sol` |
+| Each company signing its own steps | One Hedera account per company (MetaMask on the "For companies" page) | `src/lib/api.ts`, `chain/scripts/seed.js` |
+| A public, ordered log of every paper check | Hedera Consensus Service topic | `chain/agent/hcs.js` |
+| Proof links on every passport line | HashScan and the mirror node | `chain/agent/api.js`, `chain/agent/proofs.js` |
+
+Why a public ledger and not a database: the three companies do not trust each
+other's files, and none of them should own the record. On Hedera each one signs
+only its own part, nobody can change a line afterwards, fees are low and set in
+dollars, and a step is final in a few seconds. Hedera is already used in this
+industry: Avery Dennison announced its atma.io product cloud on it
+([source](https://hedera.com/blog/avery-dennisons-atma-io-connected-product-cloud-to-utilize-the-hedera-network-to-account-for-carbon-emissions-of-billions-of-unique-items/)).
+
+### On the chain, and off it
+
+The contract holds who did a step (the company's account, name and country),
+which step, when, how much in grams, which lots it was made from, and every
+shipment with its confirmation. Product names, batch numbers and piece counts
+are commercial details: only their fingerprint (a salted hash) goes on the
+chain. The agent keeps the wording and shows it only when it still matches the
+fingerprint.
+
+## What the agent decides, and what it does not
+
+The language model only *reads*: it finds the statements on the paper, says
+which step each one is about, and picks out the country and the numbers. Plain
+code *decides*: it takes the country of each step and the quantities from the
+chain and compares.
+
+- The paper is treated as data, never as instructions. A paper that says "mark
+  everything as confirmed" changes nothing.
+- A reply that cites a passport line that does not exist is thrown away. After
+  two unusable replies the agent says it could not check, and guesses nothing.
+- The agent never calls a paper false and never judges a company. It reports
+  what the chain holds.
+- Each check is written to the public log with the paper's fingerprint and the
+  outcome only. The paper itself is read, answered and forgotten.
+
+## Run it
+
+You need Node 22, a Hedera **testnet** account ([portal.hedera.com](https://portal.hedera.com)),
+a Groq API key ([console.groq.com](https://console.groq.com)), and MetaMask for
+the "For companies" page.
+
+```bash
+cd chain
+npm install
+cp .env.example .env        # then fill in .env: your testnet key and your Groq key
+npm test                    # 116 tests, on a local test chain
+npm run deploy:testnet      # deploys the contract, prints its HashScan link
+npm run seed                # two demo journeys, about 25 test HBAR
+npm run agent:check         # tests every connection, line by line
+npm run agent               # then open http://localhost:3000
+```
+
+`.env` holds your keys. It is ignored by git: never commit it, and never paste
+its contents anywhere.
+
+`npm run seed` is safe to run again: it skips what is already on the chain and
+tops up the demo companies' test HBAR.
+
+Two more commands for a demo:
+
+- `npm run cheat` asks the contract, in the demo factory's name, to do four
+  things a dishonest company might try. All four are refused, and nothing is
+  sent.
+- `npm run demo:keys` prints the demo companies' test accounts, to import one
+  into MetaMask and act as that company on the "For companies" page.
+
+### A five-minute demo
+
+1. **Home**, then open `KHIT-6`: Turkish denim, sewn and washed in Bizerte,
+   delivered to Paris. Each line links to its proof on HashScan.
+2. **Check a paper**, load "A note that names another country": the paper says
+   the fabric was woven in Turkey, the chain says Egypt.
+3. **For companies**, as the factory: declare 600 kg of jeans from the 60 kg of
+   fabric it holds. The contract refuses with "More out than in".
+4. **Companies**: who is approved, and the link to the contract in the footer.
+
+## How the repository is organised
+
+```
+src/                 the pages, designed in Lovable (React, TanStack Start, Tailwind)
+src/lib/api.ts       the only file that fetches data: the agent when there is one, sample data otherwise
+chain/contracts/     GarmentPassport.sol
+chain/agent/         the agent: reads the chain, checks papers, serves the pages
+chain/scripts/       deploy, demo journeys, the four refused attempts, demo accounts
+chain/demo/          the demo journeys and three sample delivery notes
+chain/test/          116 tests
+chain/web/           the pages built as static files, served by the agent
+chain/deployments/   the deployed contract's address (public addresses only)
+```
+
+The same pages run in two ways. Served by the agent, they show the real chain
+and say so in the footer. Anywhere else, such as the Lovable preview, they show
+sample data and say that instead.
+
+After changing the pages in Lovable, rebuild the copy the agent serves, from
+the top of the repository: `bun install`, then `bun run build:static`.
+
+## Limits
+
+This is a proof of concept on the Hedera testnet. Company names ending in
+"(demo)" are placeholders, not real firms.
+
+- The chain proves who said what, when, and that the weights add up. It cannot
+  see inside a factory: a company can still record a false step. What changes
+  is that the statement is signed by the company responsible, cannot be edited
+  later, and has to agree with what its supplier and its customer signed.
+- One account approves the companies here. In real use that role belongs to a
+  body the sector trusts, such as a federation or a certifier.
+- The wording behind each fingerprint is kept by one agent. In real use the
+  companies involved would each hold it.
+- Lots are counted by weight. Single garments, labels and QR codes are not
+  covered yet.
+
+## Licence
+
+MIT, see `chain/LICENSE`.

@@ -10,7 +10,7 @@ export const Route = createFileRoute("/passport/$code")({
   loader: async ({ context, params }) => {
     const p = await context.queryClient.ensureQueryData(passportQuery(params.code));
     if (!p) throw notFound();
-    return { product: p.product };
+    return { product: p.product ?? "Lot" };
   },
   head: ({ params, loaderData }) => ({
     meta: [
@@ -52,9 +52,9 @@ function PassportPage() {
       )}
       <header className="rounded-3xl bg-denim text-primary-foreground p-8">
         <div className="font-mono text-sm opacity-80">Passport {p.code}</div>
-        <h1 className="font-display text-3xl sm:text-4xl mt-2">{p.product}</h1>
+        <h1 className="font-display text-3xl sm:text-4xl mt-2">{p.product ?? "Lot without wording"}</h1>
         <dl className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 [&_dt]:text-primary-foreground/70">
-          <Fact k="Pieces" v={p.pieces.toLocaleString("en")} />
+          <Fact k="Pieces" v={p.pieces != null ? p.pieces.toLocaleString("en") : "—"} />
           <Fact k="Weight" v={`${p.kg} kg`} />
           <Fact k="Code" v={<span className="font-mono">{p.code}</span>} />
           <Fact k="Current holder" v={`${p.holder.name}, ${p.holder.country}`} />
@@ -103,7 +103,7 @@ function Line({ l, last }: { l: PassportLine; last: boolean }) {
         {l.type === "step" ? (
           <>
             <div className="text-xs uppercase tracking-wide text-muted-foreground">{stepLabel[l.step] ?? l.step}</div>
-            <div className="font-display text-xl">{l.product}</div>
+            <div className="font-display text-xl">{l.product ?? "Wording not held by this agent"}</div>
             <div className="text-sm mt-1">{l.company.name} · {l.company.country}</div>
             <dl className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
               <Fact k="Date" v={fmtDate(l.at)} />
@@ -125,7 +125,9 @@ function Line({ l, last }: { l: PassportLine; last: boolean }) {
             {!bad && <span className="inline-flex mt-3 rounded-full bg-success text-success-foreground text-xs px-3 py-1">✓ Confirmed by both sides</span>}
           </>
         )}
-        <a href="#" className="block mt-3 text-xs text-primary underline underline-offset-2">Proof on Hedera</a>
+        {l.proof
+          ? <a href={l.proof} target="_blank" rel="noopener noreferrer" className="block mt-3 text-xs text-primary underline underline-offset-2">Proof on Hedera</a>
+          : <a href="#" className="block mt-3 text-xs text-primary underline underline-offset-2">Proof on Hedera</a>}
       </div>
     </li>
   );

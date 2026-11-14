@@ -1,0 +1,57 @@
+{
+  "companies": [
+    { "key": "mill", "name": "Anadolu Denim (demo)", "country": "Turkey", "source": true },
+    { "key": "mill2", "name": "Delta Weaving (demo)", "country": "Egypt", "source": true },
+    { "key": "factory", "name": "Atelier Bizerte (demo)", "country": "Tunisia", "source": false },
+    { "key": "brand", "name": "Maison Lune (demo)", "country": "France", "source": false }
+  ],
+  "journeys": [
+    {
+      "key": "A",
+      "about": "Jeans made in Bizerte from Turkish denim, delivered to a brand in Paris.",
+      "steps": [
+        { "do": "record", "by": "mill", "as": "yarnA", "step": "dyeing", "kg": 780, "product": "Cotton yarn, indigo dyed", "reference": "Y-118" },
+        { "do": "make", "by": "mill", "as": "fabricA", "from": [["yarnA", 780]], "step": "weaving", "kg": 760, "product": "Indigo denim, 12 oz", "reference": "F-21" },
+        { "do": "ship", "by": "mill", "lot": "fabricA", "to": "factory", "as": "fabricA@factory", "kg": 760, "reference": "BL-0457" },
+        { "do": "make", "by": "factory", "as": "jeansA", "from": [["fabricA@factory", 700]], "step": "sewing", "kg": 610, "product": "Men's jeans, model Rafraf", "reference": "J-507", "pieces": 1000 },
+        { "do": "make", "by": "factory", "as": "washedA", "from": [["jeansA", 610]], "step": "finishing", "kg": 600, "product": "Men's jeans, stone washed", "reference": "J-507-W", "pieces": 1000 },
+        { "do": "ship", "by": "factory", "lot": "washedA", "to": "brand", "as": "final", "kg": 600, "reference": "BL-0911" }
+      ]
+    },
+    {
+      "key": "B",
+      "about": "A second batch, made from Egyptian denim. The paper that comes with it says Turkey.",
+      "steps": [
+        { "do": "record", "by": "mill2", "as": "yarnB", "step": "dyeing", "kg": 500, "product": "Cotton yarn, indigo dyed", "reference": "DW-3301" },
+        { "do": "make", "by": "mill2", "as": "fabricB", "from": [["yarnB", 500]], "step": "weaving", "kg": 480, "product": "Indigo denim, 11 oz", "reference": "DW-3302" },
+        { "do": "ship", "by": "mill2", "lot": "fabricB", "to": "factory", "as": "fabricB@factory", "kg": 480, "reference": "DN-7741" },
+        { "do": "make", "by": "factory", "as": "jeansB", "from": [["fabricB@factory", 480]], "step": "sewing", "kg": 425, "product": "Women's jeans, model Sidi Bou", "reference": "J-512", "pieces": 700 },
+        { "do": "make", "by": "factory", "as": "washedB", "from": [["jeansB", 425]], "step": "finishing", "kg": 420, "product": "Women's jeans, light wash", "reference": "J-512-W", "pieces": 700 },
+        { "do": "ship", "by": "factory", "lot": "washedB", "to": "brand", "as": "final", "kg": 420, "reference": "BL-0912" }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "id": "honest",
+      "label": "A correct delivery note",
+      "journey": "A",
+      "file": "note-correct.txt",
+      "expect": { "differs": [0, 0], "verified": [5, 20] }
+    },
+    {
+      "id": "origin",
+      "label": "A note that names another country",
+      "journey": "B",
+      "file": "note-other-origin.txt",
+      "expect": { "differs": [2, 2], "verified": [3, 20] }
+    },
+    {
+      "id": "changed",
+      "label": "A note with other quantities",
+      "journey": "A",
+      "file": "note-changed.txt",
+      "expect": { "differs": [2, 3], "not_found": [1, 3] }
+    }
+  ]
+}

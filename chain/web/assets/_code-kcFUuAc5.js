@@ -1,0 +1,1 @@
+import{s as e,t}from"./link-S7LRuTfm.js";var n=e(),r=()=>(0,n.jsxs)(`div`,{className:`text-center py-20`,children:[(0,n.jsx)(`h1`,{className:`font-display text-3xl`,children:`No passport with this code`}),(0,n.jsx)(t,{to:`/`,className:`text-primary underline mt-4 inline-block`,children:`Back home`})]});export{r as notFoundComponent};

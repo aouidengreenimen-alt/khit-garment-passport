@@ -54,9 +54,20 @@ function Check() {
         {m.isPending ? "Checking…" : "Check this paper"}
       </button>
 
+      {m.isError && (
+        <p role="alert" className="rounded-2xl bg-destructive text-destructive-foreground p-4 text-sm font-medium">
+          {m.error instanceof Error ? m.error.message : String(m.error)}
+        </p>
+      )}
+
       {r && (
         <section className="space-y-4">
           <h2 className="font-display text-2xl">Report for <Link to="/passport/$code" params={{ code: r.code }} className="text-primary underline">{r.code}</Link></h2>
+          {r.notes.length > 0 && (
+            <div className="rounded-2xl border border-destructive bg-warning text-warning-foreground p-4 space-y-1 text-sm">
+              {r.notes.map((n) => <p key={n}>⚠ {n}</p>)}
+            </div>
+          )}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {(Object.keys(statuses) as S[]).map((k) => (
               <div key={k} className="rounded-2xl border border-border bg-card p-4">
@@ -82,7 +93,16 @@ function Check() {
               );
             })}
           </ul>
-          <p className="text-xs text-muted-foreground">Checked {new Date(r.checkedAt).toLocaleString("en-GB")} · logged on Hedera topic {r.log.topicId} #{r.log.sequenceNumber}</p>
+          <p className="text-xs text-muted-foreground">
+            Checked {new Date(r.checkedAt).toLocaleString("en-GB")} ·{" "}
+            {!r.log
+              ? "this check could not be written to the log"
+              : r.log.topicId === "local-file"
+                ? `written to a local file, message #${r.log.sequenceNumber} (development mode)`
+                : r.log.url
+                  ? <a href={r.log.url} target="_blank" rel="noopener noreferrer" className="underline">logged on Hedera topic {r.log.topicId} #{r.log.sequenceNumber}</a>
+                  : `logged on Hedera topic ${r.log.topicId} #${r.log.sequenceNumber}`}
+          </p>
         </section>
       )}
     </div>

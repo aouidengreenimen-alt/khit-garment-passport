@@ -6,7 +6,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  approveCompany, confirmShipment, connectWallet, getCompanies, getWorkspace, makeProduct,
+  approveCompany, ChainRefusal, confirmShipment, connectWallet, getCompanies, getWorkspace, makeProduct,
   recordMaterial, refuseShipment, shipLot, withdrawLot, type Workspace,
 } from "@/lib/api";
 import { fmtDate } from "@/components/SiteShell";
@@ -44,7 +44,10 @@ function WorkspacePage() {
   async function run(fn: () => Promise<{ message: string }>) {
     setBusy(true); setMsg(null);
     try { const r = await fn(); setMsg({ ok: true, text: r.message }); }
-    catch (e) { setMsg({ ok: false, text: "The chain refused: " + (e instanceof Error ? e.message : String(e)) }); }
+    catch (e) {
+      const text = e instanceof Error ? e.message : String(e);
+      setMsg({ ok: false, text: e instanceof ChainRefusal ? "The chain refused: " + text : text });
+    }
     finally { setBusy(false); ws.refetch(); }
   }
 
@@ -54,15 +57,41 @@ function WorkspacePage() {
         <h1 className="font-display text-3xl">For companies</h1>
         <p className="text-muted-foreground">Each company signs its own steps with its wallet.</p>
         <button className={btn} disabled={connecting}
-          onClick={async () => { setConnecting(true); setAddress(await connectWallet()); setConnecting(false); }}>
+          onClick={async () => {
+            setConnecting(true); setMsg(null);
+            try { setAddress(await connectWallet()); }
+            catch (e) { setMsg({ ok: false, text: e instanceof Error ? e.message : String(e) }); }
+            finally { setConnecting(false); }
+          }}>
           {connecting ? "Connecting…" : "Connect wallet"}
         </button>
+        {msg && <p role="alert" className="rounded-2xl bg-destructive text-destructive-foreground p-4 text-sm font-medium">{msg.text}</p>}
       </div>
     );
   }
   if (!ws.data) return <p className="text-muted-foreground">Loading your workspace…</p>;
   const w = ws.data;
-  if (!w.company) return <div className={card}><p className="font-semibold">This wallet is not an approved company</p></div>;
+  if (!w.company) {
+    return (
+      <div className="space-y-10">
+        <div className={card}>
+          <p className="font-semibold">{w.isOwner ? "This wallet owns the contract" : "This wallet is not an approved company"}</p>
+          <p className="font-mono text-xs text-muted-foreground truncate mt-1">{address}</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            {w.isOwner
+              ? "It approves the companies that may record steps. It is not a company itself, so it records none."
+              : "Only approved companies record steps. The owner of the contract approves a company by its wallet address."}
+          </p>
+        </div>
+        {msg && (
+          <div role="status" className={`rounded-2xl p-4 text-sm font-medium ${msg.ok ? "bg-success text-success-foreground" : "bg-destructive text-destructive-foreground"}`}>
+            {msg.text}
+          </div>
+        )}
+        {w.isOwner && <Approve busy={busy} run={run} />}
+      </div>
+    );
+  }
   const c = w.company;
 
   return (
@@ -168,18 +197,22 @@ function MakeForm({ w, busy, run }: { w: Workspace; busy: boolean; run: RunFn })
   const [step, setStep] = useState("sewing");
   const [product, setProduct] = useState(""); const [reference, setReference] = useState("");
   const [pieces, setPieces] = useState(""); const [kg, setKg] = useState("");
-  const total = picked.reduce((s, l) => s + (Number(used[l]) || 0), 0);
+  const stock = w.lots.filter((l) => l.kg > 0);
+  // A lot that was used up since it was ticked is no longer part of the step.
+  const chosen = picked.filter((id) => stock.some((l) => l.lot === id));
+  const total = chosen.reduce((s, l) => s + (Number(used[l]) || 0), 0);
   return (
     <form className="space-y-4" onSubmit={(e) => { e.preventDefault();
-      run(() => makeProduct({ inputs: picked.map((l) => ({ lot: l, kg: Number(used[l]) || 0 })), step, product, reference, pieces: Number(pieces) || 0, kg: Number(kg) || 0 })); }}>
+      run(() => makeProduct({ inputs: chosen.map((l) => ({ lot: l, kg: Number(used[l]) || 0 })), step, product, reference, pieces: Number(pieces) || 0, kg: Number(kg) || 0 })); }}>
       <div className="space-y-2">
         <div className="text-sm text-muted-foreground">Lots used</div>
-        {w.lots.map((l) => (
+        {stock.length === 0 && <p className="text-sm text-muted-foreground">You hold no lot with anything left in it.</p>}
+        {stock.map((l) => (
           <div key={l.lot} className="flex items-center gap-3 text-sm">
-            <input type="checkbox" checked={picked.includes(l.lot)} aria-label={`Use ${l.code}`}
-              onChange={(e) => setPicked(e.target.checked ? [...picked, l.lot] : picked.filter((x) => x !== l.lot))} />
-            <span className="flex-1">{l.product} · {l.code} · {l.kg} kg left</span>
-            {picked.includes(l.lot) && <input className={input + " w-28"} type="number" min="0" placeholder="kg used" aria-label={`kg used from ${l.code}`}
+            <input type="checkbox" checked={chosen.includes(l.lot)} aria-label={`Use ${l.code}`}
+              onChange={(e) => setPicked(e.target.checked ? [...chosen, l.lot] : chosen.filter((x) => x !== l.lot))} />
+            <span className="flex-1 min-w-0">{l.product} · {l.code} · {l.kg} kg left</span>
+            {chosen.includes(l.lot) && <input className={input.replace("w-full ", "") + " w-28 shrink-0"} type="number" min="0" placeholder="kg used" aria-label={`kg used from ${l.code}`}
               value={used[l.lot] ?? ""} onChange={(e) => setUsed({ ...used, [l.lot]: e.target.value })} />}
           </div>
         ))}
@@ -192,20 +225,24 @@ function MakeForm({ w, busy, run }: { w: Workspace; busy: boolean; run: RunFn })
         <Field label="Weight out (kg)"><input className={input} type="number" min="0" required value={kg} onChange={(e) => setKg(e.target.value)} /></Field>
         <div className="text-sm self-end pb-2">Total used: <span className="font-semibold">{total} kg</span> · out: <span className={`font-semibold ${Number(kg) > total ? "text-destructive" : ""}`}>{Number(kg) || 0} kg</span></div>
       </div>
-      <button className={btn} disabled={busy || picked.length === 0}>Record this step</button>
+      <button className={btn} disabled={busy || chosen.length === 0}>Record this step</button>
     </form>
   );
 }
 
 function ShipForm({ w, busy, run }: { w: Workspace; busy: boolean; run: RunFn }) {
   const companies = useQuery({ queryKey: ["companies"], queryFn: getCompanies });
-  const [lot, setLot] = useState(String(w.lots[0]?.lot ?? ""));
+  const stock = w.lots.filter((l) => l.kg > 0);
+  const [lot, setLot] = useState(String(stock[0]?.lot ?? ""));
   const [to, setTo] = useState(""); const [kg, setKg] = useState(""); const [reference, setReference] = useState("");
-  const others = (companies.data ?? []).filter((c) => c.address !== w.company?.address);
+  const others = (companies.data ?? []).filter((c) => c.approved && c.address.toLowerCase() !== w.company?.address.toLowerCase());
+  // The lot that is really selected: the one chosen, or the first one once that lot has been shipped away.
+  const current = stock.some((l) => String(l.lot) === lot) ? lot : String(stock[0]?.lot ?? "");
+  if (stock.length === 0) return <p className="text-sm text-muted-foreground">You hold no lot with anything left in it.</p>;
   return (
-    <form className="grid sm:grid-cols-2 gap-3" onSubmit={(e) => { e.preventDefault(); run(() => shipLot({ lot: Number(lot), to, kg: Number(kg) || 0, reference })); }}>
-      <Field label="Lot"><select className={input} value={lot} onChange={(e) => setLot(e.target.value)}>
-        {w.lots.map((l) => <option key={l.lot} value={l.lot}>{l.code} · {l.product} ({l.kg} kg)</option>)}</select></Field>
+    <form className="grid sm:grid-cols-2 gap-3" onSubmit={(e) => { e.preventDefault(); run(() => shipLot({ lot: Number(current), to, kg: Number(kg) || 0, reference })); }}>
+      <Field label="Lot"><select className={input} value={current} onChange={(e) => setLot(e.target.value)}>
+        {stock.map((l) => <option key={l.lot} value={l.lot}>{l.code} · {l.product} ({l.kg} kg)</option>)}</select></Field>
       <Field label="Receiving company"><select className={input} required value={to} onChange={(e) => setTo(e.target.value)}>
         <option value="">Choose…</option>{others.map((c) => <option key={c.address} value={c.address}>{c.name}, {c.country}</option>)}</select></Field>
       <Field label="Weight (kg)"><input className={input} type="number" min="0" required value={kg} onChange={(e) => setKg(e.target.value)} /></Field>
