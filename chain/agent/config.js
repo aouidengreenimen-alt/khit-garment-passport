@@ -52,6 +52,8 @@ function loadConfig() {
     port: Number(env("PORT", "3000")),
     host: env("HOST", "127.0.0.1"),
     maxPaperChars: Number(env("MAX_PAPER_CHARS", "8000")),
+    // How long an answer read from the chain is remembered, to stay within the public relay's limits.
+    readCacheMs: Math.max(0, Number(env("READ_CACHE_SECONDS", "30")) || 0) * 1000,
     demoFile: path.join(ROOT, "deployments", `${network}.demo.json`),
     demoDir: path.join(ROOT, "demo"),
     dataDir: path.join(ROOT, "agent", "data"),

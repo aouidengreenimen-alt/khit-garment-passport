@@ -35,14 +35,44 @@ const brief = (company) => ({
   approved: company.approved,
 });
 
-function createReader({ contract, store }) {
+/**
+ * @param contract  the passport contract
+ * @param store     the agent's own file, see store.js
+ * @param cacheMs   how long an answer from the chain is remembered, in milliseconds (0: never)
+ * @param now       the clock, for tests
+ */
+function createReader({ contract, store, cacheMs = 30000, now = Date.now }) {
+  // Hedera's public relay allows each visitor only so many reads a minute, and
+  // one page can need twenty of them. So an answer is remembered for a short
+  // while and shared by every page that needs it. forget() drops them all: the
+  // agent calls it whenever a company has just written something.
+  const remembered = new Map();
+
+  function read(method, ...args) {
+    if (!(cacheMs > 0)) return contract[method](...args);
+    const key = `${method}:${args.join(",")}`.toLowerCase();
+    const hit = remembered.get(key);
+    if (hit && now() - hit.at < cacheMs) return hit.answer;
+    const answer = contract[method](...args);
+    remembered.set(key, { at: now(), answer });
+    // A failed read is not an answer: the next page asks again.
+    answer.catch(() => {
+      if (remembered.get(key) && remembered.get(key).answer === answer) remembered.delete(key);
+    });
+    return answer;
+  }
+
+  function forget() {
+    remembered.clear();
+  }
+
   // The cache holds the question in flight, so a company is asked about once however many lots it made.
   function company(address, cache = new Map()) {
     const key = address.toLowerCase();
     if (!cache.has(key)) {
       cache.set(
         key,
-        contract.getCompany(address).then((entry) => ({
+        read("getCompany", address).then((entry) => ({
           address,
           name: entry.name || "Unknown company",
           country: entry.country || "",
@@ -63,7 +93,7 @@ function createReader({ contract, store }) {
   }
 
   async function shipment(id, cache) {
-    const raw = await contract.getShipment(id);
+    const raw = await read("getShipment", id);
     const [from, to] = await Promise.all([company(raw.from, cache), company(raw.to, cache)]);
     return {
       id: Number(id),
@@ -80,7 +110,7 @@ function createReader({ contract, store }) {
   }
 
   async function lot(id, cache) {
-    const raw = await contract.getLot(id);
+    const raw = await read("getLot", id);
     const shipmentId = Number(raw.shipment);
     const [maker, holder, delivery] = await Promise.all([
       company(raw.maker, cache),
@@ -146,7 +176,7 @@ function createReader({ contract, store }) {
      * Returns null when the lot does not exist.
      */
     async passport(lotId) {
-      const count = Number(await contract.lotCount());
+      const count = Number(await read("lotCount"));
       if (!Number.isInteger(lotId) || lotId < 1 || lotId > count) return null;
 
       const cache = new Map();
@@ -202,7 +232,7 @@ function createReader({ contract, store }) {
 
     /** Every lot on the chain, newest first, for the page's list. */
     async lots() {
-      const count = Math.min(Number(await contract.lotCount()), MAX_LOTS);
+      const count = Math.min(Number(await read("lotCount")), MAX_LOTS);
       const cache = new Map();
       const ids = Array.from({ length: count }, (_, i) => count - i);
       const loaded = await each(ids, (id) => lot(id, cache));
@@ -230,6 +260,9 @@ function createReader({ contract, store }) {
      * @param owner the address that owns the contract
      */
     async workspace(address, owner) {
+      // This is the page a company acts from, and it is asked for again right
+      // after each of its transactions: it must show the chain as it is now.
+      forget();
       const same = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
       const cache = new Map();
       const me = await company(address, cache);
@@ -240,7 +273,7 @@ function createReader({ contract, store }) {
         return lotCache.get(id);
       };
 
-      const [held, shipmentCount] = await Promise.all([contract.lotsOf(address), contract.shipmentCount()]);
+      const [held, shipmentCount] = await Promise.all([read("lotsOf", address), read("shipmentCount")]);
       const mine = await each(held.map(Number), getLot);
       const ids = Array.from({ length: Math.min(Number(shipmentCount), MAX_LOTS) }, (_, i) => i + 1);
       const shipments = (await each(ids, (id) => shipment(id, cache))).filter((s) => same(s.from.address, address) || same(s.to.address, address));
@@ -283,13 +316,16 @@ function createReader({ contract, store }) {
       };
     },
 
+    /** Drops every remembered answer, so the next read goes to the chain. */
+    forget,
+
     async companies() {
       const cache = new Map();
-      return each([...(await contract.getCompanies())], (address) => company(address, cache));
+      return each([...(await read("getCompanies"))], (address) => company(address, cache));
     },
 
     async stats() {
-      const [list, lots, shipments] = await Promise.all([contract.getCompanies(), contract.lotCount(), contract.shipmentCount()]);
+      const [list, lots, shipments] = await Promise.all([read("getCompanies"), read("lotCount"), read("shipmentCount")]);
       return { companies: list.length, lots: Number(lots), shipments: Number(shipments) };
     },
   };

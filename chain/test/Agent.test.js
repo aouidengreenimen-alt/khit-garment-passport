@@ -520,6 +520,112 @@ describe("agent on a real contract", function () {
     });
   });
 
+  describe("staying within the public relay's limits", function () {
+    const READS = ["getLot", "getShipment", "getCompany", "getCompanies", "lotCount", "shipmentCount", "lotsOf"];
+
+    /** The same contract, counting every read that really goes to the chain. */
+    function counted(fail = () => false) {
+      const calls = [];
+      const contract = new Proxy(passport, {
+        get(target, name) {
+          const method = target[name];
+          if (!READS.includes(name)) return method;
+          return (...args) => {
+            calls.push(name);
+            if (fail(name, calls.length)) return Promise.reject(new Error("The relay is busy."));
+            return method(...args);
+          };
+        },
+      });
+      return { contract, calls };
+    }
+
+    it("reads the chain once for pages opened one after the other", async function () {
+      const lots = await journey();
+      const { contract, calls } = counted();
+      const patient = createReader({ contract, store });
+
+      await patient.lots(); // the home page
+      const first = calls.length;
+      expect(first).to.be.greaterThan(6);
+
+      await patient.passport(lots.final); // then a passport, the companies, and the passport again for a check
+      await patient.companies();
+      await patient.passport(lots.final);
+      // Only two questions were new: the list of companies, and the one company no lot mentions.
+      expect(calls.slice(first)).to.deep.equal(["getCompanies", "getCompany"]);
+    });
+
+    it("asks a question once even when several pages ask it together", async function () {
+      const lots = await journey();
+      const { contract, calls } = counted();
+      const patient = createReader({ contract, store });
+      await Promise.all([patient.passport(lots.final), patient.passport(lots.final), patient.lots()]);
+      expect(calls.filter((name) => name === "getLot")).to.have.length(6);
+      expect(calls.filter((name) => name === "lotCount")).to.have.length(1);
+    });
+
+    it("reads again once the answer is old, or as soon as it is told to forget", async function () {
+      const lots = await journey();
+      let clock = 1000000;
+      const { contract, calls } = counted();
+      const patient = createReader({ contract, store, cacheMs: 30000, now: () => clock });
+
+      expect((await patient.passport(lots.final)).warnings).to.deep.equal([]);
+      await passport.connect(mill).withdraw(lots.fabric); // written without the agent knowing
+      clock += 29000;
+      expect((await patient.passport(lots.final)).warnings).to.deep.equal([]); // still the remembered answer
+      clock += 2000;
+      expect((await patient.passport(lots.final)).warnings).to.have.length(1); // read again after 30 seconds
+
+      const before = calls.length;
+      patient.forget();
+      await patient.passport(lots.final);
+      expect(calls.length).to.be.greaterThan(before);
+    });
+
+    it("always shows a company's own page as the chain is now", async function () {
+      const lots = await journey();
+      const { contract } = counted();
+      const patient = createReader({ contract, store });
+      await patient.lots();
+      await patient.workspace(factory.address, owner.address);
+
+      const more = await make(factory, [[lots.received, 60]], { step: "sewing", product: "Men's jeans, second cut", reference: "J-530", pieces: 80 }, 50);
+      const page = await patient.workspace(factory.address, owner.address);
+      expect(page.lots[0]).to.include({ code: codeFor(more), kg: 50 });
+      // And the passport of the lot it has just made opens at once.
+      expect((await patient.passport(more)).product).to.equal("Men's jeans, second cut");
+    });
+
+    it("does not remember a read that failed", async function () {
+      const lots = await journey();
+      let failures = 0;
+      const { contract, calls } = counted((name) => name === "getLot" && failures++ < 1);
+      const patient = createReader({ contract, store });
+      let caught = null;
+      try {
+        await patient.passport(lots.final);
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught.message).to.equal("The relay is busy.");
+      const failed = calls.length;
+      expect((await patient.passport(lots.final)).code).to.equal("KHIT-6");
+      expect(calls.length).to.be.greaterThan(failed);
+    });
+
+    it("can be told never to remember", async function () {
+      const lots = await journey();
+      const { contract, calls } = counted();
+      const forgetful = createReader({ contract, store, cacheMs: 0 });
+      await forgetful.passport(lots.final);
+      const once = calls.length;
+      await forgetful.passport(lots.final);
+      expect(calls.length).to.equal(once * 2);
+    });
+  });
+
   describe("a company's own page", function () {
     it("shows what it holds and what it made", async function () {
       const lots = await journey();

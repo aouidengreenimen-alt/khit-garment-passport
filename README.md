@@ -9,6 +9,13 @@ papers against that record.
 
 Built for the Hedera Cross Campus Challenge 2026 (4Hacks, ENIB Campus Edition).
 
+**Live on the Hedera testnet**
+
+- The contract: [0.0.11460807](https://hashscan.io/testnet/contract/0xa7bef57782a412c1Ed92272ea6521Cf3196282b3)
+- The public log of paper checks: [topic 0.0.11460854](https://hashscan.io/testnet/topic/0.0.11460854)
+- Two demo journeys are recorded there: passport `KHIT-6` (jeans from Turkish
+  denim) and passport `KHIT-12` (jeans from Egyptian denim).
+
 ## The problem
 
 A pair of jeans sold in Paris is often sewn in Bizerte from fabric woven in
@@ -106,7 +113,7 @@ the "For companies" page.
 cd chain
 npm install
 cp .env.example .env        # then fill in .env: your testnet key and your Groq key
-npm test                    # 116 tests, on a local test chain
+npm test                    # 127 tests, on a local test chain
 npm run deploy:testnet      # deploys the contract, prints its HashScan link
 npm run seed                # two demo journeys, about 25 test HBAR
 npm run agent:check         # tests every connection, line by line
@@ -118,6 +125,11 @@ its contents anywhere.
 
 `npm run seed` is safe to run again: it skips what is already on the chain and
 tops up the demo companies' test HBAR.
+
+The agent reads the chain through Hedera's public relay, which allows each
+visitor a limited number of reads per minute and is sometimes busy. So the
+agent remembers what it read for 30 seconds, forgets it as soon as a company
+writes something, and waits and asks again when the relay does not answer.
 
 Two more commands for a demo:
 
@@ -146,7 +158,7 @@ chain/contracts/     GarmentPassport.sol
 chain/agent/         the agent: reads the chain, checks papers, serves the pages
 chain/scripts/       deploy, demo journeys, the four refused attempts, demo accounts
 chain/demo/          the demo journeys and three sample delivery notes
-chain/test/          116 tests
+chain/test/          127 tests
 chain/web/           the pages built as static files, served by the agent
 chain/deployments/   the deployed contract's address (public addresses only)
 ```

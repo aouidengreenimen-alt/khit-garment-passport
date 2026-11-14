@@ -1,7 +1,7 @@
 // Connection to the contract through Hedera's JSON-RPC relay.
 
 const { ethers } = require("ethers");
-const { isConnectionError } = require("./errors");
+const { isConnectionError, isBusyError } = require("./errors");
 const { agentFor } = require("./http");
 
 const HEDERA_CHAINS = { 295: "mainnet", 296: "testnet", 297: "previewnet" };
@@ -17,7 +17,10 @@ function explorerFor(chainId) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** A provider that asks again when the connection drops, instead of failing at once. */
+/**
+ * A provider that asks again when the connection drops, or when Hedera's public
+ * relay is too busy to answer, instead of failing at once.
+ */
 class PatientProvider extends ethers.JsonRpcProvider {
   constructor(url, network, options, retryDelays) {
     super(url, network, options);
@@ -30,7 +33,7 @@ class PatientProvider extends ethers.JsonRpcProvider {
       try {
         return await super._send(payload);
       } catch (error) {
-        if (!isConnectionError(error)) throw error;
+        if (!isConnectionError(error) && !isBusyError(error)) throw error;
         last = error;
         if (attempt < this.retryDelays.length) await sleep(this.retryDelays[attempt]);
       }
@@ -39,7 +42,7 @@ class PatientProvider extends ethers.JsonRpcProvider {
   }
 }
 
-function connect({ rpcUrl, chainId, privateKey, address, abi, retryDelays = [1000, 2000, 4000] }) {
+function connect({ rpcUrl, chainId, privateKey, address, abi, retryDelays = [1000, 2000, 4000, 8000] }) {
   // Slow lines need more than the default 5 seconds to set up a connection (see http.js).
   const request = new ethers.FetchRequest(rpcUrl);
   request.getUrlFunc = ethers.FetchRequest.createGetUrlFunc({ agent: agentFor(rpcUrl) });

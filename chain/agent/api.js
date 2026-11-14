@@ -141,6 +141,8 @@ function createApp({ reader, contract, llm, log, store, info, samples = () => []
   app.post("/api/proofs", async (req, res) => {
     const hash = String((req.body || {}).transaction || "").trim();
     if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return fail(res, 400, "That is not a transaction hash.");
+    // Something was just written: what the agent remembers of the chain is out of date.
+    reader.forget();
     const receipt = await contract.runner.provider.getTransactionReceipt(hash);
     if (!receipt) return fail(res, 404, "This transaction is not confirmed yet.");
     if (receipt.status !== 1) return fail(res, 400, "This transaction failed, so it recorded nothing.");

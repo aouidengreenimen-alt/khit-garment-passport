@@ -4,7 +4,7 @@ const { expect } = require("chai");
 const http = require("http");
 const { ethers } = require("ethers");
 
-const { describeError, isConnectionError } = require("../agent/errors");
+const { describeError, isConnectionError, isBusyError, relayAnswer } = require("../agent/errors");
 const { connect } = require("../agent/chain");
 const { createGroq: createGroqSlow, chooseModel } = require("../agent/llm");
 const { agentFor, requestText } = require("../agent/http");
@@ -68,6 +68,44 @@ describe("errors", function () {
     expect(isConnectionError(Object.assign(new Error("execution reverted"), { code: "CALL_EXCEPTION" }))).to.equal(false);
     expect(isConnectionError(new Error("anything else"))).to.equal(false);
     expect(isConnectionError(null)).to.equal(false);
+  });
+});
+
+describe("answers from Hedera's relay", function () {
+  // What the ethers library throws when the relay answers with an HTTP error.
+  const refused = (status, error) =>
+    Object.assign(new Error(`server response ${status}`), {
+      code: "SERVER_ERROR",
+      shortMessage: `server response ${status}`,
+      info: { responseStatus: status, responseBody: error === undefined ? "<html>gateway</html>" : JSON.stringify({ jsonrpc: "2.0", id: 1, error }) },
+    });
+  const throttled = refused("400 Bad Request", {
+    code: -32000,
+    message: "[Request ID: 7c1f] Error occurred during transaction simulation: Requests per second rate limit exceeded",
+  });
+
+  it("are reported in the relay's own words, not as a bare status", function () {
+    expect(describeError(throttled)).to.equal(
+      "Hedera's relay answered: Error occurred during transaction simulation: Requests per second rate limit exceeded"
+    );
+    expect(relayAnswer(throttled)).to.include({ status: 400, code: -32000 });
+    expect(describeError(refused("502 Bad Gateway"))).to.equal("Hedera's relay answered with an error and no explanation (HTTP 502).");
+    expect(relayAnswer(new Error("socket hang up"))).to.equal(null);
+  });
+
+  it("tell a busy moment apart from a real refusal", function () {
+    // Busy: the request did nothing, asking again is safe.
+    expect(isBusyError(throttled)).to.equal(true);
+    expect(isBusyError(refused("429 Too Many Requests", { code: -32605, message: "IP Rate limit exceeded on eth_call" }))).to.equal(true);
+    expect(isBusyError(refused("400 Bad Request", { code: -32020, message: "Mirror node upstream failure: statusCode=404, message=Not found" }))).to.equal(true);
+    expect(isBusyError(refused("500 Internal Server Error", { code: -32603, message: "Unknown error invoking RPC" }))).to.equal(true);
+    expect(isBusyError(refused("503 Service Unavailable"))).to.equal(true);
+    // A refusal: asking again would change nothing.
+    expect(isBusyError(refused("400 Bad Request", { code: -32602, message: "Invalid params" }))).to.equal(false);
+    expect(isBusyError(refused("400 Bad Request", { code: -32000, message: "Nonce too low. Provided nonce: 1, current nonce: 2" }))).to.equal(false);
+    expect(isBusyError(refused("400 Bad Request", { code: -32606, message: "HBAR Rate limit exceeded" }))).to.equal(false);
+    expect(isBusyError(Object.assign(new Error("reverted"), { code: "CALL_EXCEPTION", reason: "More out than in" }))).to.equal(false);
+    expect(isBusyError(null)).to.equal(false);
   });
 });
 
@@ -142,6 +180,61 @@ describe("connection to the network", function () {
       expect(isConnectionError(caught)).to.equal(true);
       expect(describeError(caught)).to.not.equal("");
       expect(node.requests.length).to.equal(4);
+    } finally {
+      await node.close();
+    }
+  });
+
+  it("asks again when the relay is too busy to read, and succeeds", async function () {
+    const busy = { code: -32000, message: "[Request ID: 9a2] Error occurred during transaction simulation: Requests per second rate limit exceeded" };
+    const node = await serve(({ res, body, count }) => {
+      if (count <= 2) return json(res, 400, { jsonrpc: "2.0", id: body.id, error: busy });
+      json(res, 200, { jsonrpc: "2.0", id: body.id, result: "0x0c" });
+    });
+    try {
+      const { provider } = connect(settings(node.url));
+      expect(await provider.send("eth_call", [{ to: ethers.ZeroAddress, data: "0x8da5cb5b" }, "latest"])).to.equal("0x0c");
+      expect(node.requests.length).to.equal(3);
+    } finally {
+      await node.close();
+    }
+  });
+
+  it("gives up on a relay that stays busy, and says what the relay said", async function () {
+    const node = await serve(({ res, body }) => {
+      json(res, 400, { jsonrpc: "2.0", id: body.id, error: { code: -32000, message: "[Request ID: 1b] Error occurred during transaction simulation: Gas per second rate limit exceeded" } });
+    });
+    try {
+      const { provider } = connect(settings(node.url));
+      let caught = null;
+      try {
+        await provider.send("eth_call", [{ to: ethers.ZeroAddress, data: "0x8da5cb5b" }, "latest"]);
+      } catch (error) {
+        caught = error;
+      }
+      expect(isBusyError(caught)).to.equal(true);
+      expect(describeError(caught)).to.equal("Hedera's relay answered: Error occurred during transaction simulation: Gas per second rate limit exceeded");
+      expect(node.requests.length).to.equal(4);
+    } finally {
+      await node.close();
+    }
+  });
+
+  it("does not insist when the relay refuses a request for a real reason", async function () {
+    const node = await serve(({ res, body }) => {
+      json(res, 400, { jsonrpc: "2.0", id: body.id, error: { code: -32602, message: "[Request ID: 2c] Invalid parameter 0: Expected 0x prefixed string" } });
+    });
+    try {
+      const { provider } = connect(settings(node.url));
+      let caught = null;
+      try {
+        await provider.send("eth_call", [{ to: "nonsense" }, "latest"]);
+      } catch (error) {
+        caught = error;
+      }
+      expect(isBusyError(caught)).to.equal(false);
+      expect(describeError(caught)).to.equal("Hedera's relay answered: Invalid parameter 0: Expected 0x prefixed string");
+      expect(node.requests.length).to.equal(1);
     } finally {
       await node.close();
     }

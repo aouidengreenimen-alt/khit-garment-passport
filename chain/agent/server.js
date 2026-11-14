@@ -5,7 +5,7 @@
 
 require("./network");
 const path = require("path");
-const { describeError } = require("./errors");
+const { describeError, isConnectionError, isBusyError } = require("./errors");
 const { loadConfig, loadDemo, saveTopicId } = require("./config");
 const { connect, explorerFor } = require("./chain");
 const { resolveAccountId, createHederaLog, createFileLog } = require("./hcs");
@@ -15,6 +15,25 @@ const { createReader } = require("./passport");
 const { createApp } = require("./api");
 const { createPictures } = require("./pictures");
 const { loadSamples } = require("./samples");
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Hedera's public relay is sometimes too busy to answer. At start-up that is
+ * no reason to give up: say so, wait, and ask again.
+ */
+async function patiently(fn, { tries = 9, waitMs = 20000 } = {}) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt >= tries || !(isBusyError(error) || isConnectionError(error))) throw error;
+      console.log(`The network is not answering yet (${describeError(error)}).`);
+      console.log(`Trying again in ${Math.round(waitMs / 1000)} seconds. Stop with Ctrl+C.`);
+      await sleep(waitMs);
+    }
+  }
+}
 
 async function main() {
   const cfg = loadConfig();
@@ -27,7 +46,7 @@ async function main() {
     address: deployment.address,
     abi: deployment.abi,
   });
-  const owner = await chain.contract.owner();
+  const owner = await patiently(() => chain.contract.owner());
 
   let log;
   if (cfg.localLog) {
@@ -54,7 +73,7 @@ async function main() {
   }
 
   const store = createStore(cfg.dataDir, deployment.address);
-  const reader = createReader({ contract: chain.contract, store });
+  const reader = createReader({ contract: chain.contract, store, cacheMs: cfg.readCacheMs });
   const explorer = explorerFor(deployment.chainId);
 
   const app = createApp({
@@ -84,7 +103,7 @@ async function main() {
     },
   });
 
-  const stats = await reader.stats();
+  const stats = await patiently(() => reader.stats());
   const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
   // Only this computer can reach the agent, unless HOST says otherwise.
   app.listen(cfg.port, cfg.host, (error) => {
@@ -108,6 +127,8 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(`\nThe agent could not start.\n${describeError(error)}`);
+  const busy = isBusyError(error) || isConnectionError(error);
+  const hint = busy ? "\nHedera's public relay is busy or out of reach. Wait a minute, then run \"npm run agent\" again." : "";
+  console.error(`\nThe agent could not start.\n${describeError(error)}${hint}`);
   process.exit(1);
 });

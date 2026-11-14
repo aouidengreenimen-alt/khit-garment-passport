@@ -7,9 +7,57 @@ const CONNECTION_CODES = new Set([
   "TIMEOUT", "NETWORK_ERROR",
 ]);
 
+/**
+ * What Hedera's relay said when it answered a request with an error instead of
+ * a result: { status, code, message }. Null for any other kind of error.
+ */
+function relayAnswer(error) {
+  if (!error || error.code !== "SERVER_ERROR" || !error.info) return null;
+  const status = Number.parseInt(String(error.info.responseStatus || ""), 10) || 0;
+  if (!status) return null;
+  let code = null;
+  let message = "";
+  try {
+    const parsed = JSON.parse(error.info.responseBody);
+    const entry = Array.isArray(parsed) ? parsed[0] : parsed;
+    if (entry && entry.error) {
+      code = typeof entry.error.code === "number" ? entry.error.code : null;
+      // The relay starts its messages with "[Request ID: ...]", which says nothing to a reader.
+      message = String(entry.error.message || "").replace(/^\[Request ID: [^\]]*\]\s*/i, "").trim();
+    }
+  } catch {
+    // Not JSON: only the status is known.
+  }
+  return { status, code, message };
+}
+
+// Relay answers that mean "not now": its own limit per visitor, the mirror node
+// behind it failing or timing out, or records that are not there yet.
+const BUSY_CODES = new Set([-32605, -32020, -32010, -32015, -32607]);
+
+/**
+ * True when the relay, or the mirror node it reads from, was too busy to answer.
+ * The request did nothing, so asking again a little later is safe.
+ */
+function isBusyError(error) {
+  const answer = relayAnswer(error);
+  if (!answer) return false;
+  if (answer.status === 429 || answer.status >= 500) return true;
+  if (answer.status !== 400) return false;
+  if (BUSY_CODES.has(answer.code)) return true;
+  // A read the mirror node could not run for the relay, most often because of its own rate limit.
+  return answer.code === -32000 && /transaction simulation/i.test(answer.message);
+}
+
 /** One sentence for any error, including the ones that arrive with a blank message. */
 function describeError(error) {
   if (!error) return "Unknown error";
+  const answer = relayAnswer(error);
+  if (answer) {
+    return answer.message
+      ? `Hedera's relay answered: ${answer.message}`
+      : `Hedera's relay answered with an error and no explanation (HTTP ${answer.status}).`;
+  }
   if (error.shortMessage) return error.shortMessage;
   if (error.message) return error.message;
 
@@ -35,4 +83,4 @@ function isConnectionError(error) {
   return false;
 }
 
-module.exports = { describeError, isConnectionError };
+module.exports = { describeError, isConnectionError, isBusyError, relayAnswer };
