@@ -1,0 +1,37 @@
+name: Unpack any update
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "thread-update*.zip"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Unpack every thread-update zip, whatever the browser named it
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${REPO}.git" repo
+          cd repo
+          shopt -s nullglob
+          zips=(thread-update*.zip)
+          if [ ${#zips[@]} -eq 0 ]; then echo "No update zip here: nothing to do."; exit 0; fi
+          for zip in "${zips[@]}"; do
+            echo "Unpacking ${zip}"
+            unzip -o -q "${zip}"
+            git rm -q "${zip}"
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Apply update"
+          git push || (git pull --rebase && git push)
