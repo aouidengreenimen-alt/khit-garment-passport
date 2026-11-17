@@ -1,0 +1,47 @@
+{
+  "network": "hederaTestnet",
+  "contract": "0xa7bef57782a412c1Ed92272ea6521Cf3196282b3",
+  "companies": [
+    {
+      "key": "mill",
+      "name": "Anadolu Denim (demo)",
+      "country": "Turkey",
+      "address": "0x8566f77e7687F537378e28e70E499354a528F424"
+    },
+    {
+      "key": "mill2",
+      "name": "Delta Weaving (demo)",
+      "country": "Egypt",
+      "address": "0x18FE97CCaC4c2990F0818D4Be97F90fD3ac56261"
+    },
+    {
+      "key": "factory",
+      "name": "Atelier Bizerte (demo)",
+      "country": "Tunisia",
+      "address": "0x9442Fb3D79F3f08eD0d1cb02903776c0aBbd604E"
+    },
+    {
+      "key": "brand",
+      "name": "Maison Lune (demo)",
+      "country": "France",
+      "address": "0xdda5Ac3EfBdbbE2733cAeB8f12E9E69A81C4c9a3"
+    }
+  ],
+  "journeys": {
+    "A": {
+      "lot": 6,
+      "code": "KHIT-6",
+      "about": "Jeans made in Bizerte from Turkish denim, delivered to a brand in Paris."
+    },
+    "B": {
+      "lot": 12,
+      "code": "KHIT-12",
+      "about": "A second batch, made from Egyptian denim. The paper that comes with it says Turkey."
+    }
+  },
+  "spare": {
+    "lot": 3,
+    "at": 2
+  },
+  "seededAt": "2026-11-14T20:35:40.189Z"
+}
