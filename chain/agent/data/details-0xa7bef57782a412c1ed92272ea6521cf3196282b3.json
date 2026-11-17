@@ -1,0 +1,126 @@
+{
+  "details": {
+    "0x1366b6f67ee68c7d70bafaa2b5a8db0582a5531fdcea3aba747ecde46fee1165": {
+      "v": 1,
+      "step": "dyeing",
+      "product": "Cotton yarn, indigo dyed",
+      "reference": "Y-118",
+      "pieces": null,
+      "note": "",
+      "salt": "f61e95f581e5e97970a9a3e6ee305754"
+    },
+    "0x0d91df4a7a8af98b7f05954ea2d1fced67d639dab2b5c41c84d514e3bae59fe0": {
+      "v": 1,
+      "step": "weaving",
+      "product": "Indigo denim, 12 oz",
+      "reference": "F-21",
+      "pieces": null,
+      "note": "",
+      "salt": "5746d1fab338bb9c94320eb1219c28ad"
+    },
+    "0x35336652af665d97f26224d04a6f22d47bfcecd35bf5411110dba1c00f5214fd": {
+      "v": 1,
+      "reference": "BL-0457",
+      "note": "",
+      "salt": "dd5662deda5a3b2f2b4f56c13970588b"
+    },
+    "0x6a2607d5c6900375d28090682f84d38dd73d6b79796e241042fdd9656b592ac6": {
+      "v": 1,
+      "step": "sewing",
+      "product": "Men's jeans, model Rafraf",
+      "reference": "J-507",
+      "pieces": 1000,
+      "note": "",
+      "salt": "fbe8c77df9dfd5ae86afa43667e31dbc"
+    },
+    "0xf5aff127c01d51ebc3cb57818f7ecc245d3bdaa78672147c5de848054c7ed9d4": {
+      "v": 1,
+      "step": "finishing",
+      "product": "Men's jeans, stone washed",
+      "reference": "J-507-W",
+      "pieces": 1000,
+      "note": "",
+      "salt": "ca72cbcbe7823d7267d9f4c37fca9b4a"
+    },
+    "0x0b6d9bf04da0e8f8a30f09e2fb8919ef0ecb82835ccd32d0fab3d0d534b5a227": {
+      "v": 1,
+      "reference": "BL-0911",
+      "note": "",
+      "salt": "8997a1940ac76a6cb01adb368772d645"
+    },
+    "0xbb71e670daa30f4b1391b6e7c52bb9305ef7ab863449162029b6b2d30744e5ed": {
+      "v": 1,
+      "step": "dyeing",
+      "product": "Cotton yarn, indigo dyed",
+      "reference": "DW-3301",
+      "pieces": null,
+      "note": "",
+      "salt": "042f07fdf63b0c7a5ecf830e84df5e58"
+    },
+    "0xf9f7ca1d5462772371d564631b5b6dea8095e17cb345e51f13313bb928b4c5c2": {
+      "v": 1,
+      "step": "weaving",
+      "product": "Indigo denim, 11 oz",
+      "reference": "DW-3302",
+      "pieces": null,
+      "note": "",
+      "salt": "9140a118a58dc28da00e21f6e8f77af6"
+    },
+    "0xd6efea0759c61ed57b6cebdd236de787ba67fcea7943da37210a430ce3bdf8b5": {
+      "v": 1,
+      "reference": "DN-7741",
+      "note": "",
+      "salt": "485ca7573f84447c8471e9d35fdbee54"
+    },
+    "0xf8c4d86be99b591ab98a917cef7598fc273e8c9847af13b7f6ca4e7ca6c4aba8": {
+      "v": 1,
+      "step": "sewing",
+      "product": "Women's jeans, model Sidi Bou",
+      "reference": "J-512",
+      "pieces": 700,
+      "note": "",
+      "salt": "149cc23b011bb3e5fdad4e455b658d08"
+    },
+    "0x012037f71730c9a18020170afd27caaa16f39599a3a251f10e64b1c14588f100": {
+      "v": 1,
+      "step": "finishing",
+      "product": "Women's jeans, light wash",
+      "reference": "J-512-W",
+      "pieces": 700,
+      "note": "",
+      "salt": "76fc4d2459be7f5dd9ee44ee31e38218"
+    },
+    "0xf32eb9f2283517e10bb2cee5786cbf0bd505b3d0e5326ec19da46fdd60c6a0f4": {
+      "v": 1,
+      "reference": "BL-0912",
+      "note": "",
+      "salt": "a1cd4407558a2c3445b343d0d3b7209e"
+    }
+  },
+  "proofs": {
+    "company:0x8566f77e7687f537378e28e70e499354a528f424": "0x38d67a9991ba453c88888dafe7f5641aa92a48c3108607ba9e6b6122e1b8a30a",
+    "company:0x18fe97ccac4c2990f0818d4be97f90fd3ac56261": "0xdb4a3195b39919b50acd62a73868e89cb231080c2b8405b9f6c858a934283029",
+    "company:0x9442fb3d79f3f08ed0d1cb02903776c0abbd604e": "0x07deb100e38a37c71c92f836ee6bc29bd58f6cca45313e235c52139e843af846",
+    "company:0xdda5ac3efbdbbe2733caeb8f12e9e69a81c4c9a3": "0x46a9d1c5f0d10d0ec4af860fb4b745287d6e0ee1b773d330d23396abfdb106ec",
+    "lot:1": "0xc3164d5793ed16ed63e16ba7364ff2b49a6a3d2d7bf6067e428d7e9663e1c20e",
+    "lot:2": "0x9803bfc96334d83f7c9c9581c3456d7f05718b2f75bf488a08262f203ddebe66",
+    "shipment:1:sent": "0xcfd51cfe492d1e2c72d3a996e2abe325efcea7066c9acd25666e6798915d3dd9",
+    "shipment:1:closed": "0xda44ee240887b731709b38b50f16f93ab1c0209d9dcb0c777fbe576c712b1e58",
+    "lot:3": "0xda44ee240887b731709b38b50f16f93ab1c0209d9dcb0c777fbe576c712b1e58",
+    "lot:4": "0x32b19152d78ce679bd8575324293f9f84d4541e3d6ea23af41db52bdfff535ad",
+    "lot:5": "0xf5aadc5164e69ed544f9ecefe1011830d114dc8d6bfbb12cf25c2cb81cf65a7c",
+    "shipment:2:sent": "0x40e2971d13507a1cbc3ccc4acf62194ce070a33d16136f75605f2313c9a10ea2",
+    "shipment:2:closed": "0x1c460a0493ed6baeffed2d9237171981db7dfb5f5d3a3d1cbd8fd682ab0688ae",
+    "lot:6": "0x1c460a0493ed6baeffed2d9237171981db7dfb5f5d3a3d1cbd8fd682ab0688ae",
+    "lot:7": "0xcff94f4fdd53cfc79c8d2095bbaaf6c00bcf5a28539544c2c7c925c26d770e12",
+    "lot:8": "0xfb119b3344099ee04f68681929c3d17c26044242693c52a53cac2920108eeb61",
+    "shipment:3:sent": "0x45cee32d19b6314d64f803f399a799b6a3667143475860e8a64e216c831b7f7e",
+    "shipment:3:closed": "0xef1ad2ccb756b6448f9a85cf87f41485ff376f98e1292fa477446249c7de7fd0",
+    "lot:9": "0xef1ad2ccb756b6448f9a85cf87f41485ff376f98e1292fa477446249c7de7fd0",
+    "lot:10": "0xdc6bf81720b78c0ea6d3f7ae6fab3815e9417b211cd1d3325547b0bfbeed0700",
+    "lot:11": "0x78851f4de7c54162dde8f509ca0bf3b38949f4d27e5db58d6208486ad36d2faf",
+    "shipment:4:sent": "0x08377e5984eedec2e98d2ec0f3a1872355bc338026e5ebe4e70cbe409d4b0feb",
+    "shipment:4:closed": "0x1370a85803b5d83eb62007007b2749b782e04c3b75938024a80523fb5830bf61",
+    "lot:12": "0x1370a85803b5d83eb62007007b2749b782e04c3b75938024a80523fb5830bf61"
+  }
+}
